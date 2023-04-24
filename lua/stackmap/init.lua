@@ -1,27 +1,12 @@
 local M = {}
 
--- M.setup = function(opts)
---   print("Options:", opts)
--- end
-
--- functions we need:
--- - vim.keymap.set(...) -> create new keymaps
--- - nvim_get_keymap
-
--- vim.api.nvim_get_keymap(...)
-
 local find_mapping = function(maps, lhs)
-  -- pairs
-  --    iterates over EVERY key in a table
-  --    order not guaranteed
-  -- ipairs
-  --    iteratres over ONLY numeric keys in a table
-  --    order IS guaranteed
-  for _, value in ipairs(maps) do
-    if value.lhs == lhs then
-      return value
-    end
-  end
+	lhs = string.gsub(lhs, "<leader>", vim.g.mapleader or " ")
+	for _, value in ipairs(maps) do
+		if value.lhs == lhs then
+			return value
+		end
+	end
 end
 
 M._stack = {}
