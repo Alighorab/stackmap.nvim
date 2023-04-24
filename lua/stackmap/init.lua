@@ -26,29 +26,44 @@ end
 
 M._stack = {}
 
-M.push = function(name, mode, mappings)
-  local maps = vim.api.nvim_get_keymap(mode)
+M.push = function(group, mode, mappings)
+	M._stack[group] = M._stack[group] or {}
+	M._stack[group][mode] = M._stack[group][mode] or { existing = {}, mappings = {} }
 
-  local existing_maps = {}
-  for lhs, rhs in pairs(mappings) do
-    local existing = find_mapping(maps, lhs)
-    if existing then
-      existing_maps[lhs] = existing
-    end
-  end
+	local bufnr = vim.api.nvim_get_current_buf()
+	local global_keymaps = vim.api.nvim_get_keymap(mode)
+	local buffer_keymaps = vim.api.nvim_buf_get_keymap(bufnr, mode)
+	local previous_keymaps = M._stack[group][mode].mappings or {}
+	local keymaps = vim.tbl_extend("force", global_keymaps, buffer_keymaps, previous_keymaps)
 
-  for lhs, rhs in pairs(mappings) do
-    -- TODDO: need some way to pass options in here
-    vim.keymap.set(mode, lhs, rhs)
-  end
+	local existing_keymaps = {}
+	for _, map in ipairs(mappings) do
+		local lhs = map[1] or nil
+		local rhs = map[2] or nil
+		local opts = vim.deepcopy(map[3] or {})
 
-  -- TODO: Next time show bash about metatables POGSLIDE
-  M._stack[name] = M._stack[name] or {}
+		vim.validate({
+			map = { map, "t" },
+			lhs = { lhs, "s" },
+			rhs = { rhs, { "s", "f" } },
+			opts = { opts, "t", true },
+		})
 
-  M._stack[name][mode] = {
-    existing = existing_maps,
-    mappings = mappings,
-  }
+		local existing = find_mapping(keymaps, lhs)
+		if existing then
+			table.insert(existing_keymaps, existing)
+			if existing.buffer ~= 0 then
+				vim.keymap.del(mode, existing.lhs, { buffer = existing.buffer })
+			else
+				vim.keymap.del(mode, existing.lhs)
+			end
+		end
+		vim.keymap.set(mode, lhs, rhs, opts)
+	end
+
+	-- Handle multiple calls to push with the same group and mode
+	M._stack[group][mode].existing = vim.tbl_extend("keep", M._stack[group][mode].existing, existing_keymaps)
+	M._stack[group][mode].mappings = vim.tbl_extend("force", M._stack[group][mode].mappings, mappings)
 end
 
 M.pop = function(name, mode)
