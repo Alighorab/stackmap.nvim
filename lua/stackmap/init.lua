@@ -67,41 +67,37 @@ M.push = function(group, mode, mappings)
 end
 
 M.pop = function(name, mode)
-  local state = M._stack[name][mode]
-  M._stack[name][mode] = nil
+	local state = M._stack[name][mode] or { existing = {}, mappings = {} }
+	M._stack[name][mode] = nil
 
-  for lhs in pairs(state.mappings) do
-    if state.existing[lhs] then
-      -- Handle mappings that existed
-      local og_mapping = state.existing[lhs]
+	for _, map in pairs(state.mappings) do
+		local og_map = find_mapping(state.existing, map[1])
+		if og_map then
+			local lhs = og_map.lhs
+			local rhs = og_map.callback or og_map.rhs
+			local opts = {
+				noremap = og_map.noremap,
+				silent = og_map.silent,
+				script = og_map.script,
+				nowait = og_map.nowait,
+				unique = og_map.unique,
+				desc = og_map.desc,
+			}
 
-      -- TODO: Handle the options from the table
-      vim.keymap.set(mode, lhs, og_mapping.rhs)
-    else
-      -- Handled mappings that didn't exist
-      vim.keymap.del(mode, lhs)
-    end
-  end
+			if og_map.buffer ~= 0 then
+				opts.buffer = og_map.buffer
+				vim.keymap.del(mode, og_map.lhs)
+			end
+
+			vim.keymap.set(mode, lhs, rhs, opts)
+		else
+			vim.keymap.del(mode, map[1])
+		end
+	end
 end
 
---[[
-lua require("mapstack").push("debug_mode", "n", {
-  ["<leader>st"] = "echo 'Hello'",
-  ["<leader>sz"] = "echo 'Goodbye'",
-})
-
-...
-
-push "debug"
-push "other"
-pop "debug"
-pop "other
-
-lua require("mapstack").pop("debug_mode")
---]]
-
 M._clear = function()
-  M._stack = {}
+	M._stack = {}
 end
 
 return M
