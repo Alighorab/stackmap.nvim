@@ -30,4 +30,18 @@ jobs:
         run: |
           nvim --version
           [ ! -d tests ] && exit 0
-          nvim --headless -c "PlenaryBustedDirectory tests/"
+          make test
+  luacheck:
+    name: Luacheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luarocks
+          sudo luarocks install luacheck
+
+      - name: Lint
+        run: make lint
