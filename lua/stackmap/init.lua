@@ -11,14 +11,14 @@ end
 
 M._stack = {}
 
-M.push = function(group, mode, mappings)
-	M._stack[group] = M._stack[group] or {}
-	M._stack[group][mode] = M._stack[group][mode] or { existing = {}, mappings = {} }
+M.push = function(name, mode, mappings)
+	M._stack[name] = M._stack[name] or {}
+	M._stack[name][mode] = M._stack[name][mode] or { existing = {}, mappings = {} }
 
 	local bufnr = vim.api.nvim_get_current_buf()
 	local global_keymaps = vim.api.nvim_get_keymap(mode)
 	local buffer_keymaps = vim.api.nvim_buf_get_keymap(bufnr, mode)
-	local previous_keymaps = M._stack[group][mode].mappings or {}
+	local previous_keymaps = M._stack[name][mode].mappings or {}
 	local keymaps = vim.tbl_extend("force", global_keymaps, buffer_keymaps, previous_keymaps)
 
 	local existing_keymaps = {}
@@ -47,8 +47,8 @@ M.push = function(group, mode, mappings)
 	end
 
 	-- Handle multiple calls to push with the same group and mode
-	M._stack[group][mode].existing = vim.tbl_extend("keep", M._stack[group][mode].existing, existing_keymaps)
-	M._stack[group][mode].mappings = vim.tbl_extend("force", M._stack[group][mode].mappings, mappings)
+	M._stack[name][mode].existing = vim.tbl_extend("keep", M._stack[name][mode].existing, existing_keymaps)
+	M._stack[name][mode].mappings = vim.tbl_extend("force", M._stack[name][mode].mappings, mappings)
 end
 
 M.pop = function(name, mode)
