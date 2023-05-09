@@ -76,7 +76,7 @@ M.pop = function(name, mode)
 
 			vim.keymap.set(mode, lhs, rhs, opts)
 		else
-			vim.keymap.del(mode, map[1])
+			vim.keymap.del(mode, map[1], map[3])
 		end
 	end
 end
